@@ -1,0 +1,12 @@
+docs/
+
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+tests/tmp/
+*.log
+
+/eir
+/eir.exe

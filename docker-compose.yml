@@ -1,0 +1,9 @@
+services:
+  eir:
+    image: ghcr.io/st0o0/eir:latest
+    container_name: eir
+    restart: unless-stopped
+    environment:
+      EIR_MASTERS: bifrost
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
