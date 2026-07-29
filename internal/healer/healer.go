@@ -74,7 +74,11 @@ func (h *Healer) Heal(ctx context.Context, classification detector.Classificatio
 
 func (h *Healer) healRestart(ctx context.Context, dep detector.Dependent) error {
 	h.logger.Info("restarting dependent", "container", dep.Name)
-	return h.client.ContainerRestart(ctx, dep.ContainerID, container.StopOptions{})
+	if err := h.client.ContainerRestart(ctx, dep.ContainerID, container.StopOptions{}); err != nil {
+		return err
+	}
+	h.logger.Info("healed dependent", "container", dep.Name)
+	return nil
 }
 
 func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, masterID, masterName string) error {
@@ -101,13 +105,17 @@ func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, maste
 	hostConfig := info.HostConfig
 	hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%s", masterID))
 
+	cfg := info.Config
+	cfg.Hostname = ""
+	cfg.Domainname = ""
+
 	containerName := dep.Name
 
 	h.logger.Debug("creating dependent with new network mode",
 		"container", containerName,
 		"network_mode", string(hostConfig.NetworkMode),
 	)
-	createResp, err := h.client.ContainerCreate(ctx, info.Config, hostConfig, nil, nil, containerName)
+	createResp, err := h.client.ContainerCreate(ctx, cfg, hostConfig, nil, nil, containerName)
 	if err != nil {
 		return fmt.Errorf("creating dependent %s: %w", containerName, err)
 	}

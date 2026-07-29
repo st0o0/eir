@@ -72,10 +72,14 @@ func (d *Detector) Classify(ctx context.Context, event watcher.Event) (Classific
 	d.lastKnownIDs[event.MasterName] = event.ContainerID
 
 	var classification Classification
+	var previousID string
 	if known && lastID == event.ContainerID {
 		classification = RestartCase
 	} else {
 		classification = RecreateCase
+		if known {
+			previousID = lastID
+		}
 	}
 
 	d.logger.Info("classified event",
@@ -84,7 +88,7 @@ func (d *Detector) Classify(ctx context.Context, event watcher.Event) (Classific
 		"container_id", event.ContainerID[:12],
 	)
 
-	dependents, err := d.discoverDependents(ctx, event.MasterName, event.ContainerID)
+	dependents, err := d.discoverDependents(ctx, event.MasterName, event.ContainerID, previousID)
 	if err != nil {
 		d.logger.Error("failed to discover dependents",
 			"master", event.MasterName,
@@ -96,16 +100,16 @@ func (d *Detector) Classify(ctx context.Context, event watcher.Event) (Classific
 	return classification, dependents, true
 }
 
-func (d *Detector) discoverDependents(ctx context.Context, masterName, masterID string) ([]Dependent, error) {
+func (d *Detector) discoverDependents(ctx context.Context, masterName, masterID, previousID string) ([]Dependent, error) {
 	switch d.discoveryMode {
 	case "label":
 		return d.discoverByLabel(ctx, masterName)
 	default:
-		return d.discoverByInspect(ctx, masterName, masterID)
+		return d.discoverByInspect(ctx, masterName, masterID, previousID)
 	}
 }
 
-func (d *Detector) discoverByInspect(ctx context.Context, masterName, masterID string) ([]Dependent, error) {
+func (d *Detector) discoverByInspect(ctx context.Context, masterName, masterID, previousID string) ([]Dependent, error) {
 	containers, err := d.client.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		return nil, fmt.Errorf("listing containers: %w", err)
@@ -130,7 +134,7 @@ func (d *Detector) discoverByInspect(ctx context.Context, masterName, masterID s
 		// network_mode: container:<name_or_id>
 		if strings.HasPrefix(networkMode, "container:") {
 			target := strings.TrimPrefix(networkMode, "container:")
-			if target == masterName || target == masterID {
+			if target == masterName || target == masterID || (previousID != "" && target == previousID) {
 				name := strings.TrimPrefix(info.Name, "/")
 				dependents = append(dependents, Dependent{
 					ContainerID: c.ID,

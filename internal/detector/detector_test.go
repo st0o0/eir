@@ -191,6 +191,52 @@ func TestClassify_FirstSeen(t *testing.T) {
 	}
 }
 
+func TestClassify_RecreateCase_DiscoversByPreviousID(t *testing.T) {
+	oldMasterID := "oldmaster111111111"
+	newMasterID := "newmaster222222222"
+
+	client := &mockClient{
+		containers: []types.Container{
+			{ID: "dep111111111111"},
+		},
+		inspectResults: map[string]types.ContainerJSON{
+			"dep111111111111": {
+				ContainerJSONBase: &types.ContainerJSONBase{
+					Name:  "/sidecar",
+					State: &types.ContainerState{Running: true},
+					HostConfig: &container.HostConfig{
+						NetworkMode: container.NetworkMode("container:" + oldMasterID),
+					},
+				},
+				Config: &container.Config{},
+			},
+		},
+	}
+
+	d := New(client, "inspect", discardLogger)
+	d.lastKnownIDs["vpn"] = oldMasterID
+
+	classification, deps, ok := d.Classify(context.Background(), watcher.Event{
+		MasterName:  "vpn",
+		Action:      "start",
+		ContainerID: newMasterID,
+		Time:        time.Now(),
+	})
+
+	if !ok {
+		t.Fatal("recreate start event should trigger healing")
+	}
+	if classification != RecreateCase {
+		t.Errorf("classification = %v, want RecreateCase", classification)
+	}
+	if len(deps) != 1 {
+		t.Fatalf("deps = %d, want 1", len(deps))
+	}
+	if deps[0].Name != "sidecar" {
+		t.Errorf("dep name = %q, want 'sidecar'", deps[0].Name)
+	}
+}
+
 func TestDiscoverByLabel(t *testing.T) {
 	client := &mockClient{
 		containers: []types.Container{
