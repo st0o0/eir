@@ -24,20 +24,20 @@ type call struct {
 
 type mockClient struct {
 	calls          []call
-	inspectResult  types.ContainerJSON
+	inspectResult  container.InspectResponse
 	createResponse container.CreateResponse
 	failOn         string
 }
 
-func (m *mockClient) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
+func (m *mockClient) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
 	m.calls = append(m.calls, call{"list", ""})
 	return nil, nil
 }
 
-func (m *mockClient) ContainerInspect(_ context.Context, id string) (types.ContainerJSON, error) {
+func (m *mockClient) ContainerInspect(_ context.Context, id string) (container.InspectResponse, error) {
 	m.calls = append(m.calls, call{"inspect", id})
 	if m.failOn == "inspect" {
-		return types.ContainerJSON{}, fmt.Errorf("inspect failed")
+		return container.InspectResponse{}, fmt.Errorf("inspect failed")
 	}
 	return m.inspectResult, nil
 }
@@ -115,8 +115,8 @@ func TestHeal_RestartCase(t *testing.T) {
 
 func TestHeal_RecreateCase_WasRunning(t *testing.T) {
 	client := &mockClient{
-		inspectResult: types.ContainerJSON{
-			ContainerJSONBase: &types.ContainerJSONBase{
+		inspectResult: container.InspectResponse{
+			ContainerJSONBase: &container.ContainerJSONBase{
 				HostConfig: &container.HostConfig{
 					NetworkMode: "container:oldmaster",
 				},
@@ -148,8 +148,8 @@ func TestHeal_RecreateCase_WasRunning(t *testing.T) {
 
 func TestHeal_RecreateCase_WasNotRunning(t *testing.T) {
 	client := &mockClient{
-		inspectResult: types.ContainerJSON{
-			ContainerJSONBase: &types.ContainerJSONBase{
+		inspectResult: container.InspectResponse{
+			ContainerJSONBase: &container.ContainerJSONBase{
 				HostConfig: &container.HostConfig{
 					NetworkMode: "container:oldmaster",
 				},
