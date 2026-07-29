@@ -18,13 +18,13 @@ import (
 )
 
 type mockClient struct {
-	containers     []types.Container
-	inspectResults map[string]types.ContainerJSON
+	containers     []container.Summary
+	inspectResults map[string]container.InspectResponse
 }
 
-func (m *mockClient) ContainerList(_ context.Context, opts container.ListOptions) ([]types.Container, error) {
+func (m *mockClient) ContainerList(_ context.Context, opts container.ListOptions) ([]container.Summary, error) {
 	if opts.Filters.Len() > 0 {
-		var filtered []types.Container
+		var filtered []container.Summary
 		labelFilters := opts.Filters.Get("label")
 		for _, c := range m.containers {
 			info := m.inspectResults[c.ID]
@@ -49,11 +49,11 @@ func splitLabel(s string) []string {
 	return []string{s}
 }
 
-func (m *mockClient) ContainerInspect(_ context.Context, id string) (types.ContainerJSON, error) {
+func (m *mockClient) ContainerInspect(_ context.Context, id string) (container.InspectResponse, error) {
 	if info, ok := m.inspectResults[id]; ok {
 		return info, nil
 	}
-	return types.ContainerJSON{}, fmt.Errorf("container %s not found", id)
+	return container.InspectResponse{}, fmt.Errorf("container %s not found", id)
 }
 
 func (m *mockClient) ContainerStart(context.Context, string, container.StartOptions) error {
@@ -98,14 +98,14 @@ func TestClassify_DieEvent(t *testing.T) {
 
 func TestClassify_RestartCase(t *testing.T) {
 	client := &mockClient{
-		containers: []types.Container{
+		containers: []container.Summary{
 			{ID: "dep111111111111"},
 		},
-		inspectResults: map[string]types.ContainerJSON{
+		inspectResults: map[string]container.InspectResponse{
 			"dep111111111111": {
-				ContainerJSONBase: &types.ContainerJSONBase{
+				ContainerJSONBase: &container.ContainerJSONBase{
 					Name:  "/sidecar",
-					State: &types.ContainerState{Running: true},
+					State: &container.State{Running: true},
 					HostConfig: &container.HostConfig{
 						NetworkMode: "container:vpn",
 					},
@@ -146,8 +146,8 @@ func TestClassify_RestartCase(t *testing.T) {
 
 func TestClassify_RecreateCase(t *testing.T) {
 	client := &mockClient{
-		containers:     []types.Container{},
-		inspectResults: map[string]types.ContainerJSON{},
+		containers:     []container.Summary{},
+		inspectResults: map[string]container.InspectResponse{},
 	}
 
 	d := New(client, "inspect", discardLogger)
@@ -170,8 +170,8 @@ func TestClassify_RecreateCase(t *testing.T) {
 
 func TestClassify_FirstSeen(t *testing.T) {
 	client := &mockClient{
-		containers:     []types.Container{},
-		inspectResults: map[string]types.ContainerJSON{},
+		containers:     []container.Summary{},
+		inspectResults: map[string]container.InspectResponse{},
 	}
 
 	d := New(client, "inspect", discardLogger)
@@ -196,14 +196,14 @@ func TestClassify_RecreateCase_DiscoversByPreviousID(t *testing.T) {
 	newMasterID := "newmaster222222222"
 
 	client := &mockClient{
-		containers: []types.Container{
+		containers: []container.Summary{
 			{ID: "dep111111111111"},
 		},
-		inspectResults: map[string]types.ContainerJSON{
+		inspectResults: map[string]container.InspectResponse{
 			"dep111111111111": {
-				ContainerJSONBase: &types.ContainerJSONBase{
+				ContainerJSONBase: &container.ContainerJSONBase{
 					Name:  "/sidecar",
-					State: &types.ContainerState{Running: true},
+					State: &container.State{Running: true},
 					HostConfig: &container.HostConfig{
 						NetworkMode: container.NetworkMode("container:" + oldMasterID),
 					},
@@ -239,14 +239,14 @@ func TestClassify_RecreateCase_DiscoversByPreviousID(t *testing.T) {
 
 func TestDiscoverByLabel(t *testing.T) {
 	client := &mockClient{
-		containers: []types.Container{
+		containers: []container.Summary{
 			{ID: "labeled11111111"},
 		},
-		inspectResults: map[string]types.ContainerJSON{
+		inspectResults: map[string]container.InspectResponse{
 			"labeled11111111": {
-				ContainerJSONBase: &types.ContainerJSONBase{
+				ContainerJSONBase: &container.ContainerJSONBase{
 					Name:  "/labeled-dep",
-					State: &types.ContainerState{Running: false},
+					State: &container.State{Running: false},
 					HostConfig: &container.HostConfig{
 						NetworkMode: "container:vpn",
 					},
