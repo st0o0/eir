@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/go-connections/nat"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/st0o0/eir/internal/detector"
@@ -23,10 +24,13 @@ type call struct {
 }
 
 type mockClient struct {
-	calls          []call
-	inspectResult  container.InspectResponse
-	createResponse container.CreateResponse
-	failOn         string
+	calls            []call
+	inspectResult    container.InspectResponse
+	createResponse   container.CreateResponse
+	failOn           string
+	createFailTimes  int // number of ContainerCreate calls to fail before succeeding
+	inspectCalls     int
+	failInspectAfter int // if >0, ContainerInspect fails once this many calls have already happened
 }
 
 func (m *mockClient) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
@@ -38,6 +42,10 @@ func (m *mockClient) ContainerInspect(_ context.Context, id string) (container.I
 	m.calls = append(m.calls, call{"inspect", id})
 	if m.failOn == "inspect" {
 		return container.InspectResponse{}, fmt.Errorf("inspect failed")
+	}
+	m.inspectCalls++
+	if m.failInspectAfter > 0 && m.inspectCalls > m.failInspectAfter {
+		return container.InspectResponse{}, fmt.Errorf("No such container: %s", id)
 	}
 	return m.inspectResult, nil
 }
@@ -66,10 +74,18 @@ func (m *mockClient) ContainerRemove(_ context.Context, id string, _ container.R
 	return nil
 }
 
-func (m *mockClient) ContainerCreate(_ context.Context, _ *container.Config, _ *container.HostConfig, _ *network.NetworkingConfig, _ *ocispec.Platform, name string) (container.CreateResponse, error) {
+func (m *mockClient) ContainerCreate(_ context.Context, cfg *container.Config, hostConfig *container.HostConfig, _ *network.NetworkingConfig, _ *ocispec.Platform, name string) (container.CreateResponse, error) {
 	m.calls = append(m.calls, call{"create", name})
 	if m.failOn == "create" {
 		return container.CreateResponse{}, fmt.Errorf("create failed")
+	}
+	if m.createFailTimes > 0 {
+		m.createFailTimes--
+		return container.CreateResponse{}, fmt.Errorf("create failed")
+	}
+	// Docker daemon rejects port exposing options combined with container network mode.
+	if hostConfig.NetworkMode.IsContainer() && (len(cfg.ExposedPorts) > 0 || len(hostConfig.PortBindings) > 0) {
+		return container.CreateResponse{}, fmt.Errorf("Error response from daemon: conflicting options: port exposing and the container type network mode")
 	}
 	return m.createResponse, nil
 }
@@ -172,6 +188,91 @@ func TestHeal_RecreateCase_WasNotRunning(t *testing.T) {
 	expected := []string{"inspect", "stop", "remove", "create"}
 	if len(client.calls) != len(expected) {
 		t.Fatalf("calls = %v, want %v", methodNames(client.calls), expected)
+	}
+}
+
+// TestHeal_RecreateCase_ClearsPortConfig reproduces the daemon error observed
+// in production: "conflicting options: port exposing and the container type
+// network mode". The dependent's original config carried exposed ports and
+// port bindings from when it ran on its own network; those must be cleared
+// before switching it into "container:<masterID>" network mode.
+func TestHeal_RecreateCase_ClearsPortConfig(t *testing.T) {
+	port := nat.Port("8080/tcp")
+	client := &mockClient{
+		inspectResult: container.InspectResponse{
+			ContainerJSONBase: &container.ContainerJSONBase{
+				HostConfig: &container.HostConfig{
+					NetworkMode:  "bridge",
+					PortBindings: nat.PortMap{port: []nat.PortBinding{{HostPort: "8080"}}},
+				},
+			},
+			Config: &container.Config{
+				Image:        "myapp:latest",
+				ExposedPorts: nat.PortSet{port: struct{}{}},
+			},
+		},
+		createResponse: container.CreateResponse{ID: "newdep999999"},
+	}
+	h := New(client, 0, 0, time.Millisecond, discardLogger)
+
+	err := h.Heal(context.Background(), detector.RecreateCase, "newmaster12345678", "vpn", []detector.Dependent{
+		{ContainerID: "dep111111111111", Name: "sidecar", WasRunning: true},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// TestHeal_RecreateCase_RetrySurvivesRemovedSourceContainer reproduces the
+// second failure mode from production: once ContainerStop+ContainerRemove
+// have succeeded, the original dependent no longer exists. If a retry
+// re-inspects/re-removes the original ContainerID, it permanently fails with
+// "No such container" even though the underlying create error was
+// transient/fixable. Only the create+start step should be retried.
+func TestHeal_RecreateCase_RetrySurvivesRemovedSourceContainer(t *testing.T) {
+	client := &mockClient{
+		inspectResult: container.InspectResponse{
+			ContainerJSONBase: &container.ContainerJSONBase{
+				HostConfig: &container.HostConfig{NetworkMode: "bridge"},
+			},
+			Config: &container.Config{Image: "myapp:latest"},
+		},
+		createResponse:   container.CreateResponse{ID: "newdep999999"},
+		createFailTimes:  1,
+		failInspectAfter: 1, // second inspect of the original container fails, as it's gone
+	}
+	h := New(client, 0, 1, time.Millisecond, discardLogger)
+
+	err := h.Heal(context.Background(), detector.RecreateCase, "newmaster12345678", "vpn", []detector.Dependent{
+		{ContainerID: "dep111111111111", Name: "sidecar", WasRunning: true},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	inspectCount := 0
+	removeCount := 0
+	createCount := 0
+	for _, c := range client.calls {
+		switch c.method {
+		case "inspect":
+			inspectCount++
+		case "remove":
+			removeCount++
+		case "create":
+			createCount++
+		}
+	}
+	if inspectCount != 1 {
+		t.Errorf("inspect calls = %d, want 1 (should not re-inspect removed container on retry)", inspectCount)
+	}
+	if removeCount != 1 {
+		t.Errorf("remove calls = %d, want 1 (should not re-remove already-removed container on retry)", removeCount)
+	}
+	if createCount != 2 {
+		t.Errorf("create calls = %d, want 2 (first fails, retry succeeds)", createCount)
 	}
 }
 

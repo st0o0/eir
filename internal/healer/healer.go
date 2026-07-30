@@ -8,8 +8,8 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 
-	dockerclient "github.com/st0o0/eir/internal/docker"
 	"github.com/st0o0/eir/internal/detector"
+	dockerclient "github.com/st0o0/eir/internal/docker"
 )
 
 // Healer executes recovery actions on dependent containers.
@@ -51,16 +51,17 @@ func (h *Healer) Heal(ctx context.Context, classification detector.Classificatio
 
 	var errs []error
 	for _, dep := range dependents {
-		err := h.withRetry(ctx, dep.Name, func() error {
-			switch classification {
-			case detector.RestartCase:
+		var err error
+		switch classification {
+		case detector.RestartCase:
+			err = h.withRetry(ctx, dep.Name, func() error {
 				return h.healRestart(ctx, dep)
-			case detector.RecreateCase:
-				return h.healRecreate(ctx, dep, masterID, masterName)
-			default:
-				return fmt.Errorf("unknown classification: %d", classification)
-			}
-		})
+			})
+		case detector.RecreateCase:
+			err = h.healRecreate(ctx, dep, masterID, masterName)
+		default:
+			err = fmt.Errorf("unknown classification: %d", classification)
+		}
 		if err != nil {
 			errs = append(errs, fmt.Errorf("healing %s: %w", dep.Name, err))
 		}
@@ -81,6 +82,14 @@ func (h *Healer) healRestart(ctx context.Context, dep detector.Dependent) error 
 	return nil
 }
 
+// healRecreate rebuilds a dependent so it joins masterID's network namespace.
+//
+// The teardown of the original container (inspect/stop/remove) happens
+// exactly once and is NOT retried: once ContainerRemove succeeds, dep.ContainerID
+// no longer exists, so retrying that step would only ever fail with
+// "No such container". Only the recreate step (which can fail transiently,
+// e.g. due to daemon validation errors) is retried, using the config
+// captured before teardown.
 func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, masterID, masterName string) error {
 	h.logger.Info("recreating dependent",
 		"container", dep.Name,
@@ -104,13 +113,24 @@ func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, maste
 
 	hostConfig := info.HostConfig
 	hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%s", masterID))
+	// A container joining another container's network namespace cannot also
+	// publish its own ports; the daemon rejects the combination.
+	hostConfig.PortBindings = nil
+	hostConfig.PublishAllPorts = false
 
 	cfg := info.Config
 	cfg.Hostname = ""
 	cfg.Domainname = ""
+	cfg.ExposedPorts = nil
 
 	containerName := dep.Name
 
+	return h.withRetry(ctx, dep.Name, func() error {
+		return h.createAndStart(ctx, cfg, hostConfig, containerName, dep.WasRunning, masterName)
+	})
+}
+
+func (h *Healer) createAndStart(ctx context.Context, cfg *container.Config, hostConfig *container.HostConfig, containerName string, wasRunning bool, masterName string) error {
 	h.logger.Debug("creating dependent with new network mode",
 		"container", containerName,
 		"network_mode", string(hostConfig.NetworkMode),
@@ -120,7 +140,7 @@ func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, maste
 		return fmt.Errorf("creating dependent %s: %w", containerName, err)
 	}
 
-	if dep.WasRunning {
+	if wasRunning {
 		h.logger.Debug("starting dependent", "container", containerName)
 		if err := h.client.ContainerStart(ctx, createResp.ID, container.StartOptions{}); err != nil {
 			return fmt.Errorf("starting dependent %s: %w", containerName, err)
@@ -129,7 +149,7 @@ func (h *Healer) healRecreate(ctx context.Context, dep detector.Dependent, maste
 
 	h.logger.Info("healed dependent",
 		"container", containerName,
-		"was_running", dep.WasRunning,
+		"was_running", wasRunning,
 		"master", masterName,
 	)
 	return nil
