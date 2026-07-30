@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/st0o0/eir/compare/v0.1.0...v0.1.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **healer:** clear port config and stop re-running teardown on retry ([e7169a1](https://github.com/st0o0/eir/commit/e7169a17d988484537ceacaf147ab14946665982))
+
 ## [0.1.0](https://github.com/st0o0/eir/compare/v0.1.0...v0.1.0) (2026-07-29)
 
 
