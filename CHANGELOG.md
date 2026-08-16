@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/st0o0/eir/compare/v0.1.1...v0.1.2) (2026-08-16)
+
+
+### Features
+
+* add Prometheus metrics and HTTP-based health check ([778b4b5](https://github.com/st0o0/eir/commit/778b4b5298148009b8cd443f28d12f6d74fce8d0))
+* Use new Go collector ([40507e9](https://github.com/st0o0/eir/commit/40507e9c3c200559150f837a784ae6834de59b52))
+
 ## [0.1.1](https://github.com/st0o0/eir/compare/v0.1.0...v0.1.1) (2026-07-30)
 
 
