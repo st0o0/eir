@@ -1,30 +1,48 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"time"
 
-	"github.com/docker/docker/client"
+	"github.com/st0o0/eir/internal/config"
 )
 
 func runHealthcheck() int {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("docker client error: %v\n", err)
+		fmt.Printf("config error: %v\n", err)
 		return 1
 	}
-	defer dockerClient.Close()
+	return doHealthcheck(healthAddr(cfg.MetricsAddr))
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err = dockerClient.Ping(ctx)
+func doHealthcheck(addr string) int {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("http://" + addr + "/healthz")
 	if err != nil {
-		fmt.Printf("docker ping failed: %v\n", err)
+		fmt.Printf("healthcheck failed: %v\n", err)
+		return 1
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("unhealthy: status %d\n", resp.StatusCode)
 		return 1
 	}
 
 	fmt.Println("ok")
 	return 0
+}
+
+func healthAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		return "localhost:" + port
+	}
+	return addr
 }

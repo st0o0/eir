@@ -7,12 +7,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/st0o0/eir/internal/config"
 	"github.com/st0o0/eir/internal/detector"
 	"github.com/st0o0/eir/internal/healer"
+	"github.com/st0o0/eir/internal/metrics"
 	"github.com/st0o0/eir/internal/watcher"
 )
 
@@ -46,10 +49,24 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	startTime := time.Now()
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(prometheus.NewGoCollector())
+	m := metrics.New(registry)
+
+	ping := func(ctx context.Context) error {
+		_, err := dockerClient.Ping(ctx)
+		return err
+	}
+	srv := metrics.NewServer(cfg.MetricsAddr, registry, version, startTime, cfg.Masters, ping, logger)
+	srv.Start(ctx)
+
 	logger.Info("eir starting",
 		"version", version,
 		"masters", cfg.Masters,
 		"discovery_mode", cfg.DiscoveryMode,
+		"metrics_addr", cfg.MetricsAddr,
 	)
 
 	w := watcher.New(dockerClient, cfg.Masters, logger)
@@ -76,6 +93,8 @@ func main() {
 				return
 			}
 
+			m.RecordEvent(event.Action)
+
 			classification, dependents, shouldHeal := det.Classify(ctx, event)
 			if !shouldHeal {
 				continue
@@ -87,10 +106,14 @@ func main() {
 				"dependents", len(dependents),
 			)
 
-			if err := h.Heal(ctx, classification, event.ContainerID, event.MasterName, dependents); err != nil {
+			healStart := time.Now()
+			healErr := h.Heal(ctx, classification, event.ContainerID, event.MasterName, dependents)
+			m.RecordHeal(event.MasterName, healErr, time.Since(healStart))
+
+			if healErr != nil {
 				logger.Error("healing failed",
 					"master", event.MasterName,
-					"error", err,
+					"error", healErr,
 				)
 			}
 		}

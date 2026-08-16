@@ -17,6 +17,8 @@ LABEL org.opencontainers.image.title="eir" \
 COPY --from=build /eir /eir
 COPY LICENSE NOTICE /
 
+EXPOSE 9550
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD ["/eir", "healthcheck"]
 

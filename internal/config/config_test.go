@@ -12,6 +12,7 @@ func clearEnv(t *testing.T) {
 	for _, key := range []string{
 		"EIR_MASTERS", "EIR_DISCOVERY_MODE", "EIR_STABILIZE_WAIT",
 		"EIR_MAX_RETRIES", "EIR_RETRY_BACKOFF", "EIR_LOG_LEVEL", "EIR_LOG_FORMAT",
+		"EIR_METRICS_ADDR",
 	} {
 		t.Setenv(key, "")
 		os.Unsetenv(key)
@@ -47,6 +48,9 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.LogFormat != "text" {
 		t.Errorf("log format = %q, want 'text'", cfg.LogFormat)
+	}
+	if cfg.MetricsAddr != ":9550" {
+		t.Errorf("metrics addr = %q, want ':9550'", cfg.MetricsAddr)
 	}
 }
 
@@ -165,5 +169,30 @@ func TestLoad_InvalidLogFormat(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error for invalid log format")
+	}
+}
+
+func TestLoad_CustomMetricsAddr(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("EIR_MASTERS", "nginx")
+	t.Setenv("EIR_METRICS_ADDR", "0.0.0.0:8080")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.MetricsAddr != "0.0.0.0:8080" {
+		t.Errorf("metrics addr = %q, want '0.0.0.0:8080'", cfg.MetricsAddr)
+	}
+}
+
+func TestLoad_InvalidMetricsAddr(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("EIR_MASTERS", "nginx")
+	t.Setenv("EIR_METRICS_ADDR", "not-an-addr")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error for invalid metrics addr")
 	}
 }

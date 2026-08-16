@@ -48,19 +48,27 @@ The system SHALL be configured entirely through `EIR_*` environment variables.
   - `EIR_RETRY_BACKOFF` = `5s`
   - `EIR_LOG_LEVEL` = `info`
   - `EIR_LOG_FORMAT` = `text`
+  - `EIR_METRICS_ADDR` = `:9550`
 
 ### Requirement: Health check
 
-The system SHALL provide a liveness probe that pings the Docker daemon.
+The system SHALL provide a health check via the `healthcheck` subcommand that queries the `/healthz` HTTP endpoint on the metrics server.
 
-#### Scenario: Docker reachable
+The `healthcheck` subcommand SHALL:
 
-- **WHEN** the health check runs and Docker responds within 5 seconds
+1. Load config to determine the metrics address
+2. Derive `localhost:<port>` from the configured bind address
+3. HTTP GET `http://localhost:<port>/healthz` with a 5-second timeout
+4. Exit 0 on HTTP 200, exit 1 on any other response or error
+
+#### Scenario: Healthy
+
+- **WHEN** the healthcheck subcommand runs and `/healthz` returns HTTP 200
 - **THEN** exit code 0
 
-#### Scenario: Docker unreachable
+#### Scenario: Unhealthy
 
-- **WHEN** the health check runs and Docker does not respond within 5 seconds
+- **WHEN** the healthcheck subcommand runs and `/healthz` returns a non-200 status or connection error
 - **THEN** exit code 1
 
 ### Requirement: Dependent state preservation

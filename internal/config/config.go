@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ type Config struct {
 	RetryBackoff   time.Duration
 	LogLevel       slog.Level
 	LogFormat      string
+	MetricsAddr    string
 }
 
 // Load parses EIR_* environment variables into a Config.
@@ -68,6 +70,11 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("EIR_LOG_FORMAT must be 'text' or 'json', got %q", logFormat)
 	}
 
+	metricsAddr := envOrDefault("EIR_METRICS_ADDR", ":9550")
+	if _, _, err := net.SplitHostPort(metricsAddr); err != nil {
+		return nil, fmt.Errorf("invalid EIR_METRICS_ADDR %q: %w", metricsAddr, err)
+	}
+
 	return &Config{
 		Masters:       masterList,
 		DiscoveryMode: discoveryMode,
@@ -76,6 +83,7 @@ func Load() (*Config, error) {
 		RetryBackoff:  retryBackoff,
 		LogLevel:      logLevel,
 		LogFormat:     logFormat,
+		MetricsAddr:   metricsAddr,
 	}, nil
 }
 

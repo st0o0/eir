@@ -5,5 +5,7 @@ services:
     restart: unless-stopped
     environment:
       EIR_MASTERS: bifrost
+    ports:
+      - "9550:9550"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
