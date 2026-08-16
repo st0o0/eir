@@ -68,14 +68,14 @@ func healthzHandler(version string, startTime time.Time, masters []string, ping 
 
 		if err := ping(ctx); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(healthResponse{
+			_ = json.NewEncoder(w).Encode(healthResponse{
 				Status: "error",
 				Error:  fmt.Sprintf("docker unreachable: %v", err),
 			})
 			return
 		}
 
-		json.NewEncoder(w).Encode(healthResponse{
+		_ = json.NewEncoder(w).Encode(healthResponse{
 			Status:  "ok",
 			Version: version,
 			Uptime:  time.Since(startTime).Truncate(time.Second).String(),

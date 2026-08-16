@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 
 	"github.com/st0o0/eir/internal/config"
 	"github.com/st0o0/eir/internal/detector"
@@ -52,7 +53,7 @@ func main() {
 	startTime := time.Now()
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(prometheus.NewGoCollector())
+	registry.MustRegister(collectors.NewGoCollector())
 	m := metrics.New(registry)
 
 	ping := func(ctx context.Context) error {
