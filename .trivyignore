@@ -1,0 +1,14 @@
+# github.com/moby/moby — eir uses the Docker SDK as an API client only.
+# None of the affected code paths (docker cp, image archive upload, plugin install) are reachable.
+
+# High: Host file overwrite via race condition in docker cp mount setup
+CVE-2026-42306
+
+# High: Arbitrary code execution via PUT /containers/{id}/archive with malicious image
+CVE-2026-41567
+
+# Medium: DoS via race condition in docker cp mount setup (symlink swap)
+CVE-2026-41568
+
+# Medium: Privilege validation bypass during plugin installation
+CVE-2026-33997
