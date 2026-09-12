@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.3](https://github.com/st0o0/eir/compare/v0.1.2...v0.1.3) (2026-09-12)
+
+
+### Features
+
+* decouple release-please from build workflow ([b5546d9](https://github.com/st0o0/eir/commit/b5546d90c9d519f484fe8b692b94d8c09726cb76))
+
+
+### Refactoring
+
+* migrate to shared reusable workflows ([eca5e94](https://github.com/st0o0/eir/commit/eca5e94558f857bca5a70d42b42331a4308eb9e7))
+* rename CI jobs for cleaner GitHub check names ([038a7b4](https://github.com/st0o0/eir/commit/038a7b48be7cd42538657fc81dc0ffdefe11a06d))
+
+
+### Dependencies
+
+* bump hadolint/hadolint-action from 3.4.0 to 3.5.0 in the actions-all group ([#10](https://github.com/st0o0/eir/issues/10)) ([ec0ae2a](https://github.com/st0o0/eir/commit/ec0ae2af52a4a46c2a20a6723635ceaedca611ea))
+* bump hadolint/hadolint-action in the actions-all group ([94d34a0](https://github.com/st0o0/eir/commit/94d34a062eccbfbe4c3fc19cea7a6fcbbfdf7547))
+
 ## [0.1.2](https://github.com/st0o0/eir/compare/v0.1.1...v0.1.2) (2026-08-16)
 
 
