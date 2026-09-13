@@ -1,12 +1,23 @@
 # syntax=docker/dockerfile:1
 
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
+ARG TARGETARCH
+ARG VERSION=dev
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build \
+    -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /eir ./cmd/eir
+
 FROM scratch
 LABEL org.opencontainers.image.title="eir" \
       org.opencontainers.image.description="Docker container network healer — restores dependent containers when their master restarts or is recreated" \
       org.opencontainers.image.source="https://github.com/st0o0/eir" \
       org.opencontainers.image.documentation="https://github.com/st0o0/eir#readme" \
       org.opencontainers.image.licenses="MIT"
-COPY eir /eir
+COPY --from=build /eir /eir
 COPY LICENSE NOTICE /
 
 EXPOSE 9550
