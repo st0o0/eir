@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.4](https://github.com/st0o0/eir/compare/v0.1.3...v0.1.4) (2026-09-15)
+
+
+### Features
+
+* migrate to modular build and docker workflows ([fda4539](https://github.com/st0o0/eir/commit/fda453914bf1e746ff64f63f253fb170e4df819f))
+* migrate to multi-stage Dockerfile ([eae4a17](https://github.com/st0o0/eir/commit/eae4a17fa5b3a50ddc156e759fa17c6351299528))
+
+
+### Bug Fixes
+
+* add id-token permission for cosign signing in dev builds ([84a2455](https://github.com/st0o0/eir/commit/84a2455933c107079b69a4e5e0eab60d875c7813))
+
 ## [0.1.3](https://github.com/st0o0/eir/compare/v0.1.2...v0.1.3) (2026-09-12)
 
 
