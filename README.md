@@ -1,8 +1,9 @@
 # eir
 
-[![CI](https://github.com/st0o0/eir/actions/workflows/ci.yml/badge.svg)](https://github.com/st0o0/eir/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/st0o0/eir?sort=semver)](https://github.com/st0o0/eir/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/st0o0/eir/ci.yml?style=flat-square&label=CI)](https://github.com/st0o0/eir/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/st0o0/eir?sort=semver&style=flat-square)](https://github.com/st0o0/eir/releases)
+[![GHCR](https://img.shields.io/badge/ghcr.io-st0o0%2Feir-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/st0o0/eir/pkgs/container/eir)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 Docker container network healer — automatically restores dependent containers
 when their master restarts or is recreated. The Norse goddess of healing for
