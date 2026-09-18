@@ -1,6 +1,6 @@
 services:
   eir:
-    image: ghcr.io/st0o0/eir:latest
+    image: ghcr.io/st0o0/eir:latest@sha256:6fbf124170d9c42e3af96331005679842ee9f6b63152a5b2a8d94dd0e0811901
     container_name: eir
     restart: unless-stopped
     environment:
