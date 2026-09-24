@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.4](https://github.com/st0o0/eir/compare/v0.1.3...v0.1.4) (2026-09-24)
+
+
+### Features
+
+* extend docker preset for base image digest pinning + automerge ([5e6bc88](https://github.com/st0o0/eir/commit/5e6bc88d23b343cdcc55377448e06e10e5fe701c))
+* migrate to modular build and docker workflows ([fda4539](https://github.com/st0o0/eir/commit/fda453914bf1e746ff64f63f253fb170e4df819f))
+* migrate to multi-stage Dockerfile ([eae4a17](https://github.com/st0o0/eir/commit/eae4a17fa5b3a50ddc156e759fa17c6351299528))
+
+
+### Bug Fixes
+
+* add id-token permission for cosign signing in dev builds ([84a2455](https://github.com/st0o0/eir/commit/84a2455933c107079b69a4e5e0eab60d875c7813))
+* grant contents:read and drop paths filter in dev-build docker job ([c880883](https://github.com/st0o0/eir/commit/c88088330fbba7f886a7dbcb3bb182545d842f59))
+
+
+### Documentation
+
+* align README badges ([1698881](https://github.com/st0o0/eir/commit/1698881c91b05925c4c10177462a0f5d85e0fc38))
+
 ## [0.1.3](https://github.com/st0o0/eir/compare/v0.1.2...v0.1.3) (2026-09-12)
 
 
