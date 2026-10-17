@@ -1,4 +1,4 @@
-# github.com/moby/moby — eir uses the Docker SDK as an API client only.
+# github.com/moby/moby: eir uses the Docker SDK as an API client only.
 # None of the affected code paths (docker cp, image archive upload, plugin install) are reachable.
 
 # High: Host file overwrite via race condition in docker cp mount setup

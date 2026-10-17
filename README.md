@@ -4,7 +4,7 @@
 [![GHCR](https://img.shields.io/badge/ghcr.io-st0o0%2Feir-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/st0o0/eir/pkgs/container/eir)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-Docker container network healer — automatically restores dependent containers
+Docker container network healer that automatically restores dependent containers
 when their master restarts or is recreated. The Norse goddess of healing for
 your container networks.
 
@@ -12,7 +12,7 @@ your container networks.
 
 When a "master" container (e.g. a VPN gateway like bifrost) is recreated or
 restarted, every container using `network_mode: "service:<master>"` loses its
-network connectivity. Docker does not reconnect dependents automatically — they
+network connectivity. Docker does not reconnect dependents automatically, so they
 sit there with a dead network stack until someone manually restarts them.
 
 ## The solution
@@ -68,7 +68,7 @@ available:
 ### inspect (default)
 
 eir inspects all running containers and finds those whose `NetworkMode` is
-`container:<master-id>`. This is fully automatic — no labels needed.
+`container:<master-id>`. This is fully automatic, no labels needed.
 
 ### label
 
@@ -92,7 +92,7 @@ network references.
 |---|---|
 | Master **restarted** (same container ID) | `docker restart` each dependent after `EIR_STABILIZE_WAIT` |
 | Master **recreated** (new container ID) | Recreate each dependent (stop → remove → create with new NetworkMode → start) after `EIR_STABILIZE_WAIT` |
-| Master **stopped** | No action — eir waits for the master to return |
+| Master **stopped** | No action, eir waits for the master to return |
 
 eir preserves each dependent's previous state: a dependent that was stopped
 before the master event is recreated but left stopped. Failed heals are retried
