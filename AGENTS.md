@@ -42,6 +42,6 @@ Single container with read-only Docker socket mount. Deployed via compose alongs
 
 ## Security-sensitive areas
 
-- `internal/docker/` -- Docker socket access (read-only)
-- `internal/healer/` -- container lifecycle operations (stop, remove, create, start)
-- `internal/detector/` -- inspects all containers to discover dependents
+- `internal/docker/` - Docker socket access (read-only)
+- `internal/healer/` - container lifecycle operations (stop, remove, create, start)
+- `internal/detector/` - inspects all containers to discover dependents
