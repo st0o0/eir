@@ -1,4 +1,4 @@
-# Eir
+# eir
 
 Docker container network healer. Automatically restores dependent containers when their master (e.g. a VPN gateway) restarts or is recreated.
 
