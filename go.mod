@@ -1,6 +1,6 @@
 module github.com/st0o0/eir
 
-go 1.27
+go 1.27.3
 
 require (
 	github.com/docker/docker v28.5.2+incompatible
