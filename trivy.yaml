@@ -1,0 +1,7 @@
+misconfiguration:
+  check:
+    skip:
+      # DS-0002: "Image user should not be root"
+      # eir requires root for Docker socket access (/var/run/docker.sock)
+      # on scratch-based images without group membership support.
+      - DS-0002
