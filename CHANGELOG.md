@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.1.4](https://github.com/st0o0/eir/compare/v0.1.3...v0.1.4) (2026-11-20)
+
+
+### Features
+
+* extend docker preset for base image digest pinning + automerge ([5e6bc88](https://github.com/st0o0/eir/commit/5e6bc88d23b343cdcc55377448e06e10e5fe701c))
+* migrate to modular build and docker workflows ([fda4539](https://github.com/st0o0/eir/commit/fda453914bf1e746ff64f63f253fb170e4df819f))
+* migrate to multi-stage Dockerfile ([eae4a17](https://github.com/st0o0/eir/commit/eae4a17fa5b3a50ddc156e759fa17c6351299528))
+* **security:** add source scan on PR/push, registry scan after release ([ede46ca](https://github.com/st0o0/eir/commit/ede46ca859441a8cbd3cdaa55a5c1fc8fdcc07cb))
+
+
+### Bug Fixes
+
+* add id-token permission for cosign signing in dev builds ([84a2455](https://github.com/st0o0/eir/commit/84a2455933c107079b69a4e5e0eab60d875c7813))
+* grant contents:read and drop paths filter in dev-build docker job ([c880883](https://github.com/st0o0/eir/commit/c88088330fbba7f886a7dbcb3bb182545d842f59))
+* grant pull-requests/issues write permission to labeler and label-sync callers ([2b164ee](https://github.com/st0o0/eir/commit/2b164ee95dce7d35db24a5b285e27670ba99c030))
+* **security:** add packages:read permission for reusable workflow compatibility ([77b9478](https://github.com/st0o0/eir/commit/77b947816e3cf8c177da7d08adfe6619a2fce622))
+* **security:** add trivy.yaml with DS-0002 skip and wire trivy-config ([806d327](https://github.com/st0o0/eir/commit/806d327015f63b59d35c32478304154ce6490484))
+* **security:** use .trivyignore for DS-0002 skip instead of trivy.yaml ([94d4194](https://github.com/st0o0/eir/commit/94d41943683bdc078245c988db275277dae59349))
+
+
+### Documentation
+
+* align README badges ([1698881](https://github.com/st0o0/eir/commit/1698881c91b05925c4c10177462a0f5d85e0fc38))
+* remove em dashes and simplify wording ([189de82](https://github.com/st0o0/eir/commit/189de82509117be24188fb4a73ec7c575a25e968))
+
+
+### Refactoring
+
+* **security:** remove unused trivy.yaml placeholder ([afd9a77](https://github.com/st0o0/eir/commit/afd9a772233fb3e472edcc7832f8ba2dbae3de6f))
+* **security:** simplify to fs scan on PR/push and local image scan on schedule ([82fc17c](https://github.com/st0o0/eir/commit/82fc17c1b99246e5ebdbb70a9df8af2edfc7b5f8))
+
 ## [0.1.3](https://github.com/st0o0/eir/compare/v0.1.2...v0.1.3) (2026-09-12)
 
 
